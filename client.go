@@ -97,6 +97,8 @@ if err != nil {
 		success := handShake(conn)
 	  if !success{
 		fmt.Println("handShake fallido")
+    log.Fatal("HandShake fallido")
+		conn.Close()
 		} else {
 			fmt.Println("handShake valido")
 		}
@@ -146,9 +148,10 @@ if err != nil {
 
     for {
         n, err := conn.Read(buffer)
+				fmt.Println(n, "bytes recibidos")
+				
 				BufferPacket := DeserializePacket(buffer[:n])
 
-				fmt.Println(n, "bytes recibidos")
         if  BufferPacket.Flags&FlagSTOP != 0 {
             fmt.Println("Fin de la transmisión:", err)
             break
@@ -168,30 +171,5 @@ if err != nil {
 				conn.Write(response)
 			  }
     }
+		select{}
 	}
-
-	func apelo()  {
-		f, _ := os.Open("/home/fran/Downloads/apelo.mp3")
-decoder, _ := mp3.NewDecoder(f)
-fmt.Println("decodificando...")
-pcmData, _ := io.ReadAll(decoder)
-sampleRate := decoder.SampleRate()
-ctx, err := oto.NewContext(sampleRate, 2, 2, 8192)
-if err != nil {
-	log.Fatal(err)
-}
-
-
-	player := ctx.NewPlayer()
-	defer player.Close()
-	for i := 0; i < len(pcmData); i += 1024{
-	end := i + 1024
-
-			if end > len(pcmData){
-				end = len(pcmData)
-			}
-  fmt.Println("enviando", i, len(pcmData))
-	player.Write(pcmData[i:end])
-	}
-	fmt.Println("out")
-}
