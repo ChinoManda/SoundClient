@@ -20,7 +20,7 @@ const(
 	FlagMETA   = 1 << 4 // 00010000
 	FlagCONFIG = 1 << 5 // 00100000
 	FlagCHOICE = 1 << 6 // 01000000
-	FlagEND    = 1 << 7 // 10000000
+	FlagSONGS	 = 1 << 7 // 10000000
 	sampleRate = 44100
 	numChannels = 2
 	bytesPerSample = 2 // 16-bit PCM
@@ -101,9 +101,35 @@ if err != nil {
 			fmt.Println("handShake valido")
 		}
 
+		//pedir lista canciones
+    var choices []string
+		ask := createPacket(0, 0, FlagSONGS, nil)
+    _, err = conn.Write(ask)
+		for {
+		buf := make([]byte, 1024) 
+    n, err := conn.Read(buf)
+    if err != nil {
+        log.Println("Error leyendo del servidor:", err)
+        break
+    }
+    data := DeserializePacket(buf[:n])
+		if data.Flags&FlagSONGS != 0 {
+			choices = append(choices, string(data.Data))
+		}
+		if data.Flags&FlagSTOP != 0 {
+			break
+		}
+		}
+		for i := 0; i < len(choices); i++ {
+			fmt.Printf("%d - %s \n", i, choices[i])
+		}
+		fmt.Println("Elija una cancion con el numero: ")
+		var a int
+		fmt.Scan(&a)
     // Pedir archivo
-	 songName := []byte("apelo.pcm")
-   packetChoice := createPacket(0, 0, FlagCHOICE, songName)
+	 songName := choices[a]
+	 fmt.Println("Reproduciendo ", songName)
+   packetChoice := createPacket(0, 0, FlagCHOICE, []byte(songName))
     _, err = conn.Write(packetChoice)
     if err != nil {
         panic(err)
@@ -123,7 +149,7 @@ if err != nil {
 				BufferPacket := DeserializePacket(buffer[:n])
 
 				fmt.Println(n, "bytes recibidos")
-        if  BufferPacket.Flags&FlagEND != 0 {
+        if  BufferPacket.Flags&FlagSTOP != 0 {
             fmt.Println("Fin de la transmisión:", err)
             break
         }
