@@ -58,6 +58,22 @@ func DeserializePacket(buf []byte) Packet {
     }
 }
 
+func handShake(conn *net.UDPConn) bool {
+	ack := uint32(1000)
+	handShakePacket := createPacket(0, ack, FlagSYNC, nil)
+	conn.Write(handShakePacket)
+  buffer := make([]byte, 1024)
+  conn.Read(buffer)
+	response := DeserializePacket(buffer)
+	if response.Flags&FlagSYNC != 0 && response.Flags&FlagACK != 0 {
+  if response.Ack == ack+1 {
+   handShakePacket = createPacket(ack+1, response.Seq+1, FlagACK, nil)
+	 conn.Write(handShakePacket)
+	 return true
+	}
+	}
+ return false
+}
 
 func main() {
 
@@ -78,17 +94,23 @@ if err != nil {
     }
     defer conn.Close()
 
+		success := handShake(conn)
+	  if !success{
+		fmt.Println("handShake fallido")
+		} else {
+			fmt.Println("handShake valido")
+		}
 
     // Pedir archivo
-	 songName := []byte("NoMoreTears.pcm")
+	 songName := []byte("apelo.pcm")
    packetChoice := createPacket(0, 0, FlagCHOICE, songName)
     _, err = conn.Write(packetChoice)
     if err != nil {
         panic(err)
     }
     
-    buffer := make([]byte, 1024)
-    audioChan := make(chan []byte, 100) 
+    buffer := make([]byte, 2048)
+    audioChan := make(chan []byte, 2048) 
 
     go func() {
         for data := range audioChan {
@@ -98,7 +120,7 @@ if err != nil {
 
     for {
         n, err := conn.Read(buffer)
-				BufferPacket := DeserializePacket(buffer)
+				BufferPacket := DeserializePacket(buffer[:n])
 
 				fmt.Println(n, "bytes recibidos")
         if  BufferPacket.Flags&FlagEND != 0 {
@@ -109,13 +131,14 @@ if err != nil {
         if BufferPacket.Flags&FlagAUDIO != 0 {
         // Guardar chunk al player
 				fmt.Println("Guardando" )
-        chunk := make([]byte, n)
+        chunk := make([]byte, len(BufferPacket.Data))
         copy(chunk, BufferPacket.Data)
         audioChan <- chunk
 
 				//enviar ACK
-				response := createPacket(0, BufferPacket.Seq + uint32(len(BufferPacket.Data)), FlagACK, nil)
-				fmt.Println("enviando ack", response)
+				ackValue := BufferPacket.Seq + uint32(len(BufferPacket.Data))
+				response := createPacket(0, ackValue, FlagACK, nil)
+				fmt.Println("enviando ack", ackValue, BufferPacket.Seq, len(BufferPacket.Data))
 				conn.Write(response)
 			  }
     }
