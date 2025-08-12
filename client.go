@@ -7,9 +7,6 @@ import (
 	"encoding/binary"
 	"github.com/hajimehoshi/oto"
 	"log"
-	"os"
-	"io"
- "github.com/hajimehoshi/go-mp3"
 )
 
 const(
@@ -137,7 +134,7 @@ if err != nil {
         panic(err)
     }
     
-    buffer := make([]byte, 2048)
+    buffer := make([]byte, 50000)
     audioChan := make(chan []byte, 2048) 
 
     go func() {
