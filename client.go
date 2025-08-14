@@ -58,7 +58,12 @@ func DeserializePacket(buf []byte) Packet {
 func handShake(conn *net.UDPConn) bool {
 	ack := uint32(1000)
 	handShakePacket := createPacket(0, ack, FlagSYNC, nil)
-	conn.Write(handShakePacket)
+	_, err := conn.Write(handShakePacket)
+if err != nil {
+        panic(err)
+    }
+
+	fmt.Println("paqueton")
   buffer := make([]byte, 1024)
   conn.Read(buffer)
 	response := DeserializePacket(buffer)
@@ -66,6 +71,7 @@ func handShake(conn *net.UDPConn) bool {
   if response.Ack == ack+1 {
    handShakePacket = createPacket(ack+1, response.Seq+1, FlagACK, nil)
 	 conn.Write(handShakePacket)
+	 fmt.Println("paquete enviado")
 	 return true
 	}
 	}
@@ -80,12 +86,12 @@ if err != nil {
 }
 	player := ctx.NewPlayer()
 	defer player.Close()
-
-    serverAddr := net.UDPAddr{
-        IP:   net.ParseIP("127.0.0.1"),
-        Port: 9000,
-    }
-    conn, err := net.DialUDP("udp", nil, &serverAddr)
+	serverAddr, err := net.ResolveUDPAddr("udp", "localhost:9000")
+	if err != nil {
+    log.Fatal("No pude resolver la dirección:", err)
+	}
+    
+    conn, err := net.DialUDP("udp", nil, serverAddr)
     if err != nil {
         panic(err)
     }
@@ -164,8 +170,8 @@ if err != nil {
 				//enviar ACK
 				ackValue := BufferPacket.Seq + uint32(len(BufferPacket.Data))
 				response := createPacket(0, ackValue, FlagACK, nil)
-				fmt.Println("enviando ack", ackValue, BufferPacket.Seq, len(BufferPacket.Data))
-				conn.Write(response)
+				fmt.Println("enviando ack", response,ackValue, BufferPacket.Seq, len(BufferPacket.Data))
+		  	//conn.Write(response)
 			  }
     }
 		select{}
