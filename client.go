@@ -171,7 +171,7 @@ if err != nil {
 				ackValue := BufferPacket.Seq + uint32(len(BufferPacket.Data))
 				response := createPacket(0, ackValue, FlagACK, nil)
 				fmt.Println("enviando ack", response,ackValue, BufferPacket.Seq, len(BufferPacket.Data))
-		  	//conn.Write(response)
+		  	conn.Write(response)
 			  }
     }
 		select{}
