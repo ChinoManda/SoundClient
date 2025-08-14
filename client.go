@@ -86,7 +86,7 @@ if err != nil {
 }
 	player := ctx.NewPlayer()
 	defer player.Close()
-	serverAddr, err := net.ResolveUDPAddr("udp", "localhost:9000")
+	serverAddr, err := net.ResolveUDPAddr("udp", "frantify.ddns.net:9000")
 	if err != nil {
     log.Fatal("No pude resolver la dirección:", err)
 	}
