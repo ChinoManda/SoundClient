@@ -63,7 +63,6 @@ if err != nil {
         panic(err)
     }
 
-	fmt.Println("paqueton")
   buffer := make([]byte, 1024)
   conn.Read(buffer)
 	response := DeserializePacket(buffer)
@@ -71,8 +70,15 @@ if err != nil {
   if response.Ack == ack+1 {
    handShakePacket = createPacket(ack+1, response.Seq+1, FlagACK, nil)
 	 conn.Write(handShakePacket)
-	 fmt.Println("paquete enviado")
+	 n, _ := conn.Read(buffer)
+
+	 endShake := DeserializePacket(buffer[:n])
+	 if endShake.Flags&FlagACK != 0 {
 	 return true
+   }
+	 if endShake.Flags&FlagSYNC != 0 {
+	 return false
+	 }
 	}
 	}
  return false
@@ -99,7 +105,6 @@ if err != nil {
 
 		success := handShake(conn)
 	  if !success{
-		fmt.Println("handShake fallido")
     log.Fatal("HandShake fallido")
 		conn.Close()
 		} else {
@@ -109,6 +114,8 @@ if err != nil {
 		//pedir lista canciones
     var choices []string
 		ask := createPacket(0, 0, FlagSONGS, nil)
+
+	fmt.Printf("Raw bytes: %x\n", ask)
     _, err = conn.Write(ask)
 		for {
 		buf := make([]byte, 1024) 
@@ -151,8 +158,6 @@ if err != nil {
 
     for {
         n, err := conn.Read(buffer)
-				fmt.Println(n, "bytes recibidos")
-				
 				BufferPacket := DeserializePacket(buffer[:n])
 
         if  BufferPacket.Flags&FlagSTOP != 0 {
@@ -162,7 +167,6 @@ if err != nil {
 
         if BufferPacket.Flags&FlagAUDIO != 0 {
         // Guardar chunk al player
-				fmt.Println("Guardando" )
         chunk := make([]byte, len(BufferPacket.Data))
         copy(chunk, BufferPacket.Data)
         audioChan <- chunk
@@ -170,7 +174,6 @@ if err != nil {
 				//enviar ACK
 				ackValue := BufferPacket.Seq + uint32(len(BufferPacket.Data))
 				response := createPacket(0, ackValue, FlagACK, nil)
-				fmt.Println("enviando ack", response,ackValue, BufferPacket.Seq, len(BufferPacket.Data))
 		  	conn.Write(response)
 			  }
     }
