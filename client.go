@@ -115,7 +115,6 @@ if err != nil {
     var choices []string
 		ask := createPacket(0, 0, FlagSONGS, nil)
 
-	fmt.Printf("Raw bytes: %x\n", ask)
     _, err = conn.Write(ask)
 		for {
 		buf := make([]byte, 1024) 
